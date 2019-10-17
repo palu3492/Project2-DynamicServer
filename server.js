@@ -61,11 +61,30 @@ app.get('/state/:selected_state', (req, res) => {
     ReadFile(path.join(template_dir, 'state.html')).then((template) => {
         let response = template;
         // modify `response` here
+        response = handleState(response, req);
         WriteHtml(res, response);
     }).catch((err) => {
         Write404Error(res);
     });
 });
+
+function handleState(html, req){
+    let state = req.params.selected_state;
+    html = html.replace(/!!ABBREVIATION!!/g, state);
+    db.all("SELECT * FROM Consumption WHERE state_abbreviation = ?", [state], (err, rows) => {
+        for(let i = 0; i < rows.length; i++){
+            let row = rows[i];
+            /*
+            coal: 709796,
+            natural_gas: 264753,
+            nuclear: 86853,
+            petroleum: 603795,
+            renewable: 95172 },
+             */
+        }
+    });
+    return html;
+}
 
 // GET request handler for '/energy-type/*'
 app.get('/energy-type/:selected_energy_type', (req, res) => {
