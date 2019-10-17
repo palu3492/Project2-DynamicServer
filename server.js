@@ -61,6 +61,20 @@ app.get('/', (req, res) => {
             response = response.replace('!!PetroleumCount!!', petroleumCount);
             response = response.replace('!!RenewableCount!!', renewableCount);
             
+            let table = '';
+            for (i = 0; i < rows.length; i++){
+                table += '<tr>'; 
+                table += '<td>' + rows[i]['state_abbreviation'] + '</td>';
+                table += '<td>' + rows[i]['coal'] + '</td>';
+                table += '<td>' + rows[i]['natural_gas'] + '</td>';
+                table += '<td>' + rows[i]['nuclear'] + '</td>';
+                table += '<td>' + rows[i]['petroleum'] + '</td>';
+                table += '<td>' + rows[i]['renewable'] + '</td>';
+                table += '</tr>'
+            }
+
+            response = response.replace('<!-- Data to be inserted here -->', table);
+
             
             WriteHtml(res, response);
         });
