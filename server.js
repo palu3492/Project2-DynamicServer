@@ -87,33 +87,47 @@ app.get('/state/:selected_state', (req, res) => {
     ReadFile(path.join(template_dir, 'state.html')).then((template) => {
         let response = template;
         // modify `response` here
-        let state = req.params.selected_state;
-        response = response.replace(/!!ABBREVIATION!!/g, state);
-        db.all("SELECT * FROM Consumption WHERE state_abbreviation = ?", [state], (err, rows) => {
+        let stateAbbrName = req.params.selected_state;
+        response = response.replace(/!!StateAbbrName!!/g, stateAbbrName); // replace state abbreviation
+        let promise1 = new Promise((resolve, reject) => {
+            db.get("SELECT state_name FROM States WHERE state_abbreviation = ?", stateAbbrName, (err, row) => {
+                resolve(row.state_name);
+            });
+        });
 
-            let coalCount = [];
-            let naturalGasCount = [];
-            let nuclearCount = [];
-            let petroleumCount = [];
-            let renewableCount = [];
+        let promise2 = new Promise((resolve, reject) => {
+            db.all("SELECT * FROM Consumption WHERE state_abbreviation = ?", stateAbbrName, (err, rows) => {
+                resolve(rows);
+            });
+        });
 
+        Promise.all([promise1, promise2]).then((values) => {
+            let stateFullName = values[0]; // full state name
+            let rows = values[1]; // all years values for a state
+
+            let coalCounts = [];
+            let naturalGasCounts = [];
+            let nuclearCounts = [];
+            let petroleumCounts = [];
+            let renewableCounts = [];
+            // loop through each year
             for(let i = 0; i < rows.length; i++){
                 let row = rows[i];
-                coalCount.push(row.coal);
-                naturalGasCount.push(row.natural_gas);
-                nuclearCount.push(row.nuclear);
-                petroleumCount.push(row.petroleum);
-                renewableCount.push(row.renewable);
+                coalCounts.push(row.coal);
+                naturalGasCounts.push(row.natural_gas);
+                nuclearCounts.push(row.nuclear);
+                petroleumCounts.push(row.petroleum);
+                renewableCounts.push(row.renewable);
             }
-            response = response.replace('!!StateName!!', state);
-            response = response.replace('!!Coalcount!!', coalCount);
-            response = response.replace('!!Gascount!!', naturalGasCount);
-            response = response.replace('!!NuclearCount!!', nuclearCount);
-            response = response.replace('!!PetroleumCount!!', petroleumCount);
-            response = response.replace('!!RenewableCount!!', renewableCount);
-            console.log(response);
+            response = response.replace('!!StateFullName!!', stateFullName);
+            response = response.replace('!!CoalCounts!!', coalCounts);
+            response = response.replace('!!GasCounts!!', naturalGasCounts);
+            response = response.replace('!!NuclearCounts!!', nuclearCounts);
+            response = response.replace('!!PetroleumCounts!!', petroleumCounts);
+            response = response.replace('!!RenewableCounts!!', renewableCounts);
+
             WriteHtml(res, response);
-        });
+        })
     }).catch((err) => {
         Write404Error(res);
     });
