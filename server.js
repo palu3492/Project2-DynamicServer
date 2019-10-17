@@ -26,8 +26,8 @@ var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READONLY, (err) => {
 });
 
 function TestSQL(){
-    db.all("SELECT * FROM Consumption WHERE state_abbreviation =?", ["MN"], (err,rows) =>{
-        console.log(rows);
+    db.all("SELECT * FROM Consumption WHERE year =?", ["2017"], (err,rows) =>{
+        //console.log(rows);
     });
 }
 
@@ -38,8 +38,34 @@ app.use(express.static(public_dir));
 app.get('/', (req, res) => {
     ReadFile(path.join(template_dir, 'index.html')).then((template) => {
         let response = template;
-        // modify `response` here
-        WriteHtml(res, response);
+        db.all("SELECT * FROM Consumption WHERE year =?", ["2017"], (err,rows) =>{
+            let coalCount = 0;
+            let gasCount = 0;
+            let nuclearCount = 0;
+            let petroleumCount = 0;
+            let renewableCount = 0; 
+            let i; 
+            
+            for (i = 0; i < rows.length; i++){
+                
+                coalCount += rows[i]['coal'];  
+                gasCount += rows[i]['natural_gas'];
+                nuclearCount += rows[i]['nuclear']; 
+                petroleumCount += rows[i]['petroleum'];
+                renewableCount += rows[i]['renewable'];
+            }
+            
+            response = response.replace('!!Coalcount!!', coalCount);
+            response = response.replace('!!Gascount!!', gasCount);
+            response = response.replace('!!NuclearCount!!', nuclearCount);
+            response = response.replace('!!PetroleumCount!!', petroleumCount);
+            response = response.replace('!!RenewableCount!!', renewableCount);
+            
+            
+            WriteHtml(res, response);
+        });
+
+        
     }).catch((err) => {
         Write404Error(res);
     });
