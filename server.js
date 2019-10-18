@@ -81,12 +81,13 @@ app.get('/year/:selected_year', (req, res) => {
         Write404Error(res);
     });
 });
-
+let states = [];
 // GET request handler for '/state/*'
 app.get('/state/:selected_state', (req, res) => {
     ReadFile(path.join(template_dir, 'state.html')).then((template) => {
         let response = template;
         // modify `response` here
+
         let stateAbbrName = req.params.selected_state;
         let stateImagePath = '/images/states/'+stateAbbrName+'.png';
         response = response.replace(/!!StateAbbrName!!/g, stateAbbrName); // replace state abbreviation
@@ -114,24 +115,50 @@ app.get('/state/:selected_state', (req, res) => {
             let nuclearCounts = [];
             let petroleumCounts = [];
             let renewableCounts = [];
+
             // loop through each year
+            let tableBody = '';
             for(let i = 0; i < rows.length; i++){
                 let row = rows[i];
+
+                // Fill in table
+                let total = 0;
+                tableBody += '<tr>';
+                for(let col of Object.keys(row)){
+                    if(col !== 'state_abbreviation') {
+                        tableBody += '<td>' + row[col] + '</td>';
+                        total += row[col];
+                    }
+                }
+                tableBody += '<td>'+total+'</td>';
+                tableBody += '</tr>';
+
+                // Push values into array for graph
                 coalCounts.push(row.coal);
                 naturalGasCounts.push(row.natural_gas);
                 nuclearCounts.push(row.nuclear);
                 petroleumCounts.push(row.petroleum);
                 renewableCounts.push(row.renewable);
             }
-            response = response.replace('!!StateFullName!!', stateFullName);
 
+            // Pagination
+            let prevState = 'ZZ';
+            let nextState = 'ZZ';
+            response = response.replace(/!!PrevStateAbbr!!/g, prevState);
+            response = response.replace(/!!NextStateAbbr!!/g, nextState);
+
+
+
+            // Replace data in template
+            response = response.replace('!!StateTableData!!', tableBody);
+            response = response.replace('!!StateFullName!!', stateFullName);
             response = response.replace('!!CoalCounts!!', coalCounts);
             response = response.replace('!!GasCounts!!', naturalGasCounts);
             response = response.replace('!!NuclearCounts!!', nuclearCounts);
             response = response.replace('!!PetroleumCounts!!', petroleumCounts);
             response = response.replace('!!RenewableCounts!!', renewableCounts);
 
-            WriteHtml(res, response);
+            WriteHtml(res, response); // write when both promises are done
         })
     }).catch((err) => {
         Write404Error(res);
