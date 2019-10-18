@@ -88,7 +88,11 @@ app.get('/state/:selected_state', (req, res) => {
         let response = template;
         // modify `response` here
         let stateAbbrName = req.params.selected_state;
+        let stateImagePath = '/images/states/'+stateAbbrName+'.png';
         response = response.replace(/!!StateAbbrName!!/g, stateAbbrName); // replace state abbreviation
+        response = response.replace('!!StateImage!!', stateImagePath); // replace state image src
+        response = response.replace('!!StateImageAlt!!', 'State of '+stateAbbrName+' image'); // replace state image alt
+
         let promise1 = new Promise((resolve, reject) => {
             db.get("SELECT state_name FROM States WHERE state_abbreviation = ?", stateAbbrName, (err, row) => {
                 resolve(row.state_name);
@@ -120,6 +124,7 @@ app.get('/state/:selected_state', (req, res) => {
                 renewableCounts.push(row.renewable);
             }
             response = response.replace('!!StateFullName!!', stateFullName);
+
             response = response.replace('!!CoalCounts!!', coalCounts);
             response = response.replace('!!GasCounts!!', naturalGasCounts);
             response = response.replace('!!NuclearCounts!!', nuclearCounts);
