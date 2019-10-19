@@ -82,7 +82,57 @@ app.get('/year/:selected_year', (req, res) => {
     });
 });
 
-// Figured this was easiest way
+// GET request handler for '/state/*'
+app.get('/state/:selected_state', (req, res) => {
+    let stateAbbrName = req.params.selected_state; // Abbreviated state requested
+    if(Object.keys(statePrevNext).includes(stateAbbrName)) {
+        ReadFile(path.join(template_dir, 'state.html')).then((template) => {
+            let response = template;
+            // modify `response` here
+
+            response = replaceStateTemplateImages(response, stateAbbrName);
+            response = replaceStateTemplatePagination(response, stateAbbrName);
+
+            let stateNamePromise = new Promise((resolve, reject) => {
+                db.get("SELECT state_name FROM States WHERE state_abbreviation = ?", stateAbbrName, (err, row) => {
+                    let stateFullName = row.state_name;
+                    response = response.replace('!!StateFullName!!', stateFullName);
+                    resolve();
+                });
+            });
+
+            let stateConsumptionPromise = new Promise((resolve, reject) => {
+                db.all("SELECT * FROM Consumption WHERE state_abbreviation = ?", stateAbbrName, (err, rows) => {
+                    response = replaceStateTemplateTable(response, rows);
+                    response = replaceStateTemplateVariables(response, rows);
+                    resolve();
+                });
+            });
+
+            // Write html when both promises are done
+            Promise.all([stateNamePromise, stateConsumptionPromise]).then((values) => {
+                WriteHtml(res, response); // write when both promises are done
+            })
+        }).catch((err) => {
+            Write404Error(res);
+        });
+    } else {
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.write('Error: no data for state '+stateAbbrName);
+        res.end();
+    }
+});
+// Replace state images source and alt in template
+function replaceStateTemplateImages(response, stateAbbrName){
+    let stateImagePath = '/images/states/'+stateAbbrName+'.png'; // file path for state image
+    response = response.replace(/!!StateAbbrName!!/g, stateAbbrName); // Replace all state abbreviation
+    response = response.replace('!!StateImage!!', stateImagePath); // Replace state image src
+    response = response.replace('!!StateImageAlt!!', 'State of '+stateAbbrName+' image'); // Replace state image alt
+    return response;
+}
+
+// Maps a state to the previous and next state for pagination
+// Didn't want to calculate these every time
 let statePrevNext = {
     AK:{prev:'WY',next:'AL'},AL:{prev:'AK',next:'AR'},AR:{prev:'AL',next:'AZ'},AZ:{prev:'AR',next:'CA'},
     CA:{prev:'AZ',next:'CO'},CO:{prev:'CA',next:'CT'},CT:{prev:'CO',next:'DC'},DC:{prev:'CT',next:'DE'},
@@ -98,67 +148,22 @@ let statePrevNext = {
     UT:{prev:'TX',next:'VA'},VA:{prev:'UT',next:'VT'},VT:{prev:'VA',next:'WA'},WA:{prev:'VT',next:'WI'},
     WI:{prev:'WA',next:'WV'},WV:{prev:'WI',next:'WY'},WY:{prev:'WV',next:'AK'}
 };
-
-// GET request handler for '/state/*'
-app.get('/state/:selected_state', (req, res) => {
-
-    ReadFile(path.join(template_dir, 'state.html')).then((template) => {
-        let response = template;
-        // modify `response` here
-
-        let stateAbbrName = req.params.selected_state; // Abbreviated state requested
-        let stateImagePath = '/images/states/'+stateAbbrName+'.png'; // file path for state image
-        response = response.replace(/!!StateAbbrName!!/g, stateAbbrName); // Replace all state abbreviation
-        response = response.replace('!!StateImage!!', stateImagePath); // Replace state image src
-        response = response.replace('!!StateImageAlt!!', 'State of '+stateAbbrName+' image'); // Replace state image alt
-
-        response = response.replace(/!!PrevStateAbbr!!/g, statePrevNext[stateAbbrName].prev);
-        response = response.replace(/!!NextStateAbbr!!/g, statePrevNext[stateAbbrName].next);
-
-
-        let promise1 = new Promise((resolve, reject) => {
-            db.get("SELECT state_name FROM States WHERE state_abbreviation = ?", stateAbbrName, (err, row) => {
-                resolve(row.state_name);
-            });
-        });
-
-        let promise2 = new Promise((resolve, reject) => {
-            db.all("SELECT * FROM Consumption WHERE state_abbreviation = ?", stateAbbrName, (err, rows) => {
-                resolve(rows);
-            });
-        });
-
-        Promise.all([promise1, promise2]).then((values) => {
-            let stateFullName = values[0]; // full state name
-            let rows = values[1]; // state consumption all years
-
-            response = stateFillTemplate(response, rows);
-            response = response.replace('!!StateFullName!!', stateFullName); // Add full state name
-
-            WriteHtml(res, response); // write when both promises are done
-        })
-    }).catch((err) => {
-        Write404Error(res);
-    });
-});
-
-function stateFillTemplate(template, rows){
-
-    let coalCounts = [];
-    let naturalGasCounts = [];
-    let nuclearCounts = [];
-    let petroleumCounts = [];
-    let renewableCounts = [];
-
-    // loop through each year
+// Replaces next and previous state buttons links
+function replaceStateTemplatePagination(response, stateAbbrName){
+    response = response.replace(/!!PrevStateAbbr!!/g, statePrevNext[stateAbbrName].prev);
+    response = response.replace(/!!NextStateAbbr!!/g, statePrevNext[stateAbbrName].next);
+    return response;
+}
+// Build state table html and fill in template
+function replaceStateTemplateTable(response, rows){
     let tableBody = '';
+    let row, total, col;
     for(let i = 0; i < rows.length; i++){
-        let row = rows[i];
-
+        row = rows[i];
         // Fill in table
-        let total = 0;
+        total = 0;
         tableBody += '<tr>';
-        for(let col of Object.keys(row)){
+        for(col of Object.keys(row)){
             if(col !== 'state_abbreviation') {
                 tableBody += '<td>' + row[col] + '</td>';
                 total += row[col];
@@ -166,8 +171,24 @@ function stateFillTemplate(template, rows){
         }
         tableBody += '<td>'+total+'</td>';
         tableBody += '</tr>';
+    }
 
-        // Push values into array for graph
+    response = response.replace('!!StateTableData!!', tableBody);
+
+    return response;
+}
+// Fill state consumption array variables in template
+function replaceStateTemplateVariables(response, rows){
+    let coalCounts = [];
+    let naturalGasCounts = [];
+    let nuclearCounts = [];
+    let petroleumCounts = [];
+    let renewableCounts = [];
+
+    let row;
+    for(let i = 0; i < rows.length; i++){
+        row = rows[i];
+        // Push values into arrays for graph
         coalCounts.push(row.coal);
         naturalGasCounts.push(row.natural_gas);
         nuclearCounts.push(Math.abs(row.nuclear)); // How can there be negative consumption?
@@ -175,15 +196,13 @@ function stateFillTemplate(template, rows){
         renewableCounts.push(row.renewable);
     }
 
-    // Replace data in template
-    template = template.replace('!!StateTableData!!', tableBody);
+    response = response.replace('!!CoalCounts!!', coalCounts);
+    response = response.replace('!!GasCounts!!', naturalGasCounts);
+    response = response.replace('!!NuclearCounts!!', nuclearCounts);
+    response = response.replace('!!PetroleumCounts!!', petroleumCounts);
+    response = response.replace('!!RenewableCounts!!', renewableCounts);
 
-    template = template.replace('!!CoalCounts!!', coalCounts);
-    template = template.replace('!!GasCounts!!', naturalGasCounts);
-    template = template.replace('!!NuclearCounts!!', nuclearCounts);
-    template = template.replace('!!PetroleumCounts!!', petroleumCounts);
-    template = template.replace('!!RenewableCounts!!', renewableCounts);
-    return template;
+    return response;
 }
 
 // GET request handler for '/energy-type/*'
