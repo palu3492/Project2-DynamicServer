@@ -210,6 +210,19 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
     ReadFile(path.join(template_dir, 'energy.html')).then((template) => {
         let response = template;
         // modify `response` here
+		let energyType = req.params.selected_energy_type;
+        let energyImagePath = '/images/energy/'+energyType+'.png';
+        response = response.replace('!!!energy_type!!!', energyType); // replace energy type
+		response = response.replace('!!ENERGYImageAlt!!', energyType+' image');// replace energy image alt
+        response = response.replace('!!ENERGYImage!!', energyImagePath); // replace energy image src
+        
+        // Pagination
+        let prevState = 'ZZ';
+        let nextState = 'ZZ';
+        response = response.replace(/!!!PREV_ENERGY_TYPE!!!/g, prevState);
+        response = response.replace(/!!!NEXT_ENERGY_TYPE!!!/g, nextState);
+        response = response.replace(/!!!ENERGYTYPE!!!/g, energyType);
+
         WriteHtml(res, response);
     }).catch((err) => {
         Write404Error(res);
