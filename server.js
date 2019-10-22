@@ -215,15 +215,15 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
         response = replaceEnergyTemplateImages(response, energyType);
         response = replaceEnergyTemplatePagination(response, energyType);
 		
-			//need to get x conumption by state by year
-			//need to update the Table and Template Variable
-            //
-            //    db.all("NEED AN SQL QUERY HERE TO LOOP THROUGH ALL STATES FOR CONSUMPTION BY YEAR", energyType, (err, rows) => {
+		   //need to get x conumption by state by year
+		   //need to update the Table and Template Variable
+           //
+           //    db.all("NEED AN SQL QUERY HERE TO LOOP THROUGH ALL STATES FOR CONSUMPTION BY YEAR", energyType, (err, rows) => {
                     //response = replaceEnergyTemplateTable(response, rows);//NEED TO COMPLETE THIS FUNCTION
                     //response = replaceEnergyTemplateVariables(response, rows); NEED TO COMPLETE THIS FUNCTION
            //         resolve();
            //     });
-          //           
+           //           
 		
 		WriteHtml(res, response);
     }).catch((err) => {
@@ -269,7 +269,7 @@ function replaceEnergyTemplateVariables(response, rows){//THIS FUNCTION NEEDS TO
 
 // Replace energy images source and alt in template
 function replaceEnergyTemplateImages(response, energyType){
-    let energyImagePath = '/images/states/'+energyType+'.png'; // file path for state image
+    let energyImagePath = '/images/energy/'+energyType+'.png'; // file path for state image
 	response = response.replace('!!!energy_type!!!', energyType); // replace energy type
     response = response.replace(/!!!ENERGYTYPE!!!/g, energyType); // Replace all instances for energy
     response = response.replace('!!ENERGYImage!!', energyImagePath); // Replace energy image src
