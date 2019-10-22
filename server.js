@@ -247,10 +247,11 @@ function replaceEnergyTemplateVariables(response, rows){//THIS FUNCTION NEEDS TO
     return response;
 }
 
-// Replace energy images source and alt in template
+// Replace energy images source and alt in template and other template info
 function replaceEnergyTemplateImages(response, energyType){
     let energyImagePath = '/images/energy/'+energyType+'.png'; // file path for state image
 	response = response.replace('!!!energy_type!!!', energyType); // replace energy type
+	response = response.replace(/!!!ENERGY_TITLE_HEAD!!!/g,energyNeatName[energyType].name);//changes title
     response = response.replace(/!!!ENERGYTYPE!!!/g, energyNeatName[energyType].name); // Replace all instances for energy
     response = response.replace('!!ENERGYImage!!', energyImagePath); // Replace energy image src
 response = response.replace('!!ENERGYImageAlt!!', energyNeatName[energyType].name+' image'); // Replace energy image alt
