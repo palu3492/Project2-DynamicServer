@@ -98,20 +98,145 @@ app.get('/year/:selected_year', (req, res) => {
 
 // GET request handler for '/state/*'
 app.get('/state/:selected_state', (req, res) => {
-    ReadFile(path.join(template_dir, 'state.html')).then((template) => {
-        let response = template;
-        // modify `response` here
-        WriteHtml(res, response);
-    }).catch((err) => {
-        Write404Error(res);
-    });
+    let stateAbbrName = req.params.selected_state; // Abbreviated state requested
+    if(Object.keys(statePrevNext).includes(stateAbbrName)) {
+        ReadFile(path.join(template_dir, 'state.html')).then((template) => {
+            let response = template;
+            // modify `response` here
+
+            response = replaceStateTemplateImages(response, stateAbbrName);
+            response = replaceStateTemplatePagination(response, stateAbbrName);
+
+            let stateNamePromise = new Promise((resolve, reject) => {
+                db.get("SELECT state_name FROM States WHERE state_abbreviation = ?", stateAbbrName, (err, row) => {
+                    let stateFullName = row.state_name;
+                    response = response.replace('!!StateFullName!!', stateFullName);
+                    resolve();
+                });
+            });
+
+            let stateConsumptionPromise = new Promise((resolve, reject) => {
+                db.all("SELECT * FROM Consumption WHERE state_abbreviation = ?", stateAbbrName, (err, rows) => {
+                    response = replaceStateTemplateTable(response, rows);
+                    response = replaceStateTemplateVariables(response, rows);
+                    resolve();
+                });
+            });
+
+            // Write html when both promises are done
+            Promise.all([stateNamePromise, stateConsumptionPromise]).then((values) => {
+                WriteHtml(res, response); // write when both promises are done
+            })
+        }).catch((err) => {
+            Write404Error(res);
+        });
+    } else {
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.write('Error: no data for state '+stateAbbrName);
+        res.end();
+    }
 });
+// Replace state images source and alt in template
+function replaceStateTemplateImages(response, stateAbbrName){
+    let stateImagePath = '/images/states/'+stateAbbrName+'.png'; // file path for state image
+    response = response.replace(/!!StateAbbrName!!/g, stateAbbrName); // Replace all state abbreviation
+    response = response.replace('!!StateImage!!', stateImagePath); // Replace state image src
+    response = response.replace('!!StateImageAlt!!', 'State of '+stateAbbrName+' image'); // Replace state image alt
+    return response;
+}
+
+// Maps a state to the previous and next state for pagination
+// Didn't want to calculate these every time
+let statePrevNext = {
+    AK:{prev:'WY',next:'AL'},AL:{prev:'AK',next:'AR'},AR:{prev:'AL',next:'AZ'},AZ:{prev:'AR',next:'CA'},
+    CA:{prev:'AZ',next:'CO'},CO:{prev:'CA',next:'CT'},CT:{prev:'CO',next:'DC'},DC:{prev:'CT',next:'DE'},
+    DE:{prev:'DC',next:'FL'},FL:{prev:'DE',next:'GA'},GA:{prev:'FL',next:'HI'},HI:{prev:'GA',next:'IA'},
+    IA:{prev:'HI',next:'ID'},ID:{prev:'IA',next:'IL'},IL:{prev:'ID',next:'IN'},IN:{prev:'IL',next:'KS'},
+    KS:{prev:'IN',next:'KY'},KY:{prev:'KS',next:'LA'},LA:{prev:'KY',next:'MA'},MA:{prev:'LA',next:'MD'},
+    MD:{prev:'MA',next:'ME'},ME:{prev:'MD',next:'MI'},MI:{prev:'ME',next:'MN'},MN:{prev:'MI',next:'MO'},
+    MO:{prev:'MN',next:'MS'},MS:{prev:'MO',next:'MT'},MT:{prev:'MS',next:'NC'},NC:{prev:'MT',next:'ND'},
+    ND:{prev:'NC',next:'NE'},NE:{prev:'ND',next:'NH'},NH:{prev:'NE',next:'NJ'},NJ:{prev:'NH',next:'NM'},
+    NM:{prev:'NJ',next:'NV'},NV:{prev:'NM',next:'NY'},NY:{prev:'NV',next:'OH'},OH:{prev:'NY',next:'OK'},
+    OK:{prev:'OH',next:'OR'},OR:{prev:'OK',next:'PA'},PA:{prev:'OR',next:'RI'},RI:{prev:'PA',next:'SC'},
+    SC:{prev:'RI',next:'SD'},SD:{prev:'SC',next:'TN'},TN:{prev:'SD',next:'TX'},TX:{prev:'TN',next:'UT'},
+    UT:{prev:'TX',next:'VA'},VA:{prev:'UT',next:'VT'},VT:{prev:'VA',next:'WA'},WA:{prev:'VT',next:'WI'},
+    WI:{prev:'WA',next:'WV'},WV:{prev:'WI',next:'WY'},WY:{prev:'WV',next:'AK'}
+};
+// Replaces next and previous state buttons links
+function replaceStateTemplatePagination(response, stateAbbrName){
+    response = response.replace(/!!PrevStateAbbr!!/g, statePrevNext[stateAbbrName].prev);
+    response = response.replace(/!!NextStateAbbr!!/g, statePrevNext[stateAbbrName].next);
+    return response;
+}
+// Build state table html and fill in template
+function replaceStateTemplateTable(response, rows){
+    let tableBody = '';
+    let row, total, col;
+    for(let i = 0; i < rows.length; i++){
+        row = rows[i];
+        // Fill in table
+        total = 0;
+        tableBody += '<tr>';
+        for(col of Object.keys(row)){
+            if(col !== 'state_abbreviation') {
+                tableBody += '<td>' + row[col] + '</td>';
+                total += row[col];
+            }
+        }
+        tableBody += '<td>'+total+'</td>';
+        tableBody += '</tr>';
+    }
+
+    response = response.replace('!!StateTableData!!', tableBody);
+
+    return response;
+}
+// Fill state consumption array variables in template
+function replaceStateTemplateVariables(response, rows){
+    let coalCounts = [];
+    let naturalGasCounts = [];
+    let nuclearCounts = [];
+    let petroleumCounts = [];
+    let renewableCounts = [];
+
+    let row;
+    for(let i = 0; i < rows.length; i++){
+        row = rows[i];
+        // Push values into arrays for graph
+        coalCounts.push(row.coal);
+        naturalGasCounts.push(row.natural_gas);
+        nuclearCounts.push(Math.abs(row.nuclear)); // How can there be negative consumption?
+        petroleumCounts.push(row.petroleum);
+        renewableCounts.push(row.renewable);
+    }
+
+    response = response.replace('!!CoalCounts!!', coalCounts);
+    response = response.replace('!!GasCounts!!', naturalGasCounts);
+    response = response.replace('!!NuclearCounts!!', nuclearCounts);
+    response = response.replace('!!PetroleumCounts!!', petroleumCounts);
+    response = response.replace('!!RenewableCounts!!', renewableCounts);
+
+    return response;
+}
 
 // GET request handler for '/energy-type/*'
 app.get('/energy-type/:selected_energy_type', (req, res) => {
     ReadFile(path.join(template_dir, 'energy.html')).then((template) => {
         let response = template;
         // modify `response` here
+		let energyType = req.params.selected_energy_type;
+        let energyImagePath = '/images/energy/'+energyType+'.png';
+        response = response.replace('!!!energy_type!!!', energyType); // replace energy type
+		response = response.replace('!!ENERGYImageAlt!!', energyType+' image');// replace energy image alt
+        response = response.replace('!!ENERGYImage!!', energyImagePath); // replace energy image src
+        
+        // Pagination
+        let prevState = 'ZZ';
+        let nextState = 'ZZ';
+        response = response.replace(/!!!PREV_ENERGY_TYPE!!!/g, prevState);
+        response = response.replace(/!!!NEXT_ENERGY_TYPE!!!/g, nextState);
+        response = response.replace(/!!!ENERGYTYPE!!!/g, energyType);
+
         WriteHtml(res, response);
     }).catch((err) => {
         Write404Error(res);

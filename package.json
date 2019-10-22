@@ -1,25 +1,25 @@
 {
     "name": "dynamic-webserver",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "description": "Dynamic Web Server using Node JS",
     "author": {
-        "name": "",
-        "email": ""
+        "name": "Alex Palumbo",
+        "email": "palu3492@stthomas.edu"
     },
     "contributors": [
         {
-            "name": "",
+            "name": "Alex Yurevich",
             "email": ""
         },
         {
-            "name": "",
-            "email": ""
+            "name": "Charlie Rooney",
+            "email": "roon5086@stthomas.edu"
         }
     ],
     "main": "server.js",
     "repository": {
         "type": "git",
-        "url": ""
+        "url": "https://github.com/palu3492/Project2-DynamicServer"
     },
     "dependencies": {
         "express": "^4.17.1",

@@ -11,8 +11,8 @@
     <script type="application/javascript" src="/scripts/energyvis.js"></script>
     <script type="application/javascript">
         // `energy_type` and object of consumption per year per state --> set these variables equal to appropriate value
-        var energy_type;
-        var energy_counts;  // e.g. {AK: [...], AL: [...], AR: [...], ...}
+        var energy_type = !!!energy_type!!!;
+        var energy_counts = [!!!energy_counts!!!];  // e.g. {AK: [...], AL: [...], AR: [...], ...}
     </script>
 </head>
 <body onload="Init()">
@@ -41,15 +41,15 @@
 
             <div>
                 <div class="left">
-                    <h2>Consumption Snapshot</h2> <!-- change header to include energy type (e.g. Coal Consumption Snaphot) -->
+                    <h2>!!!ENERGYTYPE!!! Consumption Snapshot</h2> <!-- change header to include energy type (e.g. Coal Consumption Snaphot) -->
                 </div>
                 <div class="right">
-                    <a class="prev_next" href="">XX</a> <!-- change XX to prev enery type, link to Renewable if energy is Coal -->
-                    <a class="prev_next" href="">XX</a> <!-- change XX to next enery type, link to Coal if energy is Renewable -->
+                    <a class="prev_next" href="">!!!PREV_ENERGY_TYPE!!!</a> <!-- change XX to prev enery type, link to Renewable if energy is Coal -->
+                    <a class="prev_next" href="">!!!NEXT_ENERGY_TYPE!!!</a> <!-- change XX to next enery type, link to Coal if energy is Renewable -->
                 </div>
                 <div class="spacer1"></div>
                 <div class="left">
-                    <img src="/images/noimage.jpg" alt="No Image" width="250" height="auto" /> <!-- change src and alt for energy type image -->
+                    <img src="!!ENERGYImage!!" alt="!!ENERGYImageAlt!!" width="250" height="auto" /> <!-- change src and alt for energy type image -->
                 </div>
                 <div class="right">
                     <div id="snapshot"></div>
@@ -121,6 +121,7 @@
                 </thead>
                 <tbody>
                     <!-- Data to be inserted here -->
+					!!!EnergyTableData!!!
                 </tbody>
             </table>
             </div>

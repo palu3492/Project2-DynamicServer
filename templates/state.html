@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
-    <title>US Energy Consumption</title> <!-- change title to include year (e.g. 1999 US Energy Consumption) -->
+    <title>!!StateAbbrName!! Energy Consumption</title> <!-- change title to include state (e.g. MN Energy Consumption) -->
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.anychart.com/releases/8.7.0/js/anychart-core.min.js"></script>
     <script src="https://cdn.anychart.com/releases/8.7.0/js/anychart-cartesian.min.js"></script>
@@ -11,12 +11,12 @@
     <script type="application/javascript" src="/scripts/statevis.js"></script>
     <script type="application/javascript">
         // `state` and arrays of consumption per year --> set these variables equal to appropriate value
-        var state;
-        var coal_counts;  // e.g. [1234, 2567, ...]
-        var natural_gas_counts;
-        var nuclear_counts;
-        var petroleum_counts;
-        var renewable_counts;
+        var state = '!!StateAbbrName!!'; // string
+        var coal_counts = [!!CoalCounts!!]; // arrays
+        var natural_gas_counts = [!!GasCounts!!];
+        var nuclear_counts = [!!NuclearCounts!!];
+        var petroleum_counts = [!!PetroleumCounts!!];
+        var renewable_counts = [!!RenewableCounts!!];
     </script>
 </head>
 <body onload="Init()">
@@ -45,15 +45,15 @@
 
             <div>
                 <div class="left">
-                    <h2>Yearly Snapshot</h2> <!-- change header to include state (e.g. Minnesota Yearly Snaphot) -->
+                    <h2>!!StateFullName!! Yearly Snapshot</h2> <!-- change header to include state (e.g. Minnesota Yearly Snaphot) -->
                 </div>
                 <div class="right">
-                    <a class="prev_next" href="">XX</a> <!-- change XX to prev state, link to WY if state is AK -->
-                    <a class="prev_next" href="">XX</a> <!-- change XX to next state, link to AK if state is WY -->
+                    <a class="prev_next" href="/state/!!PrevStateAbbr!!">!!PrevStateAbbr!!</a> <!-- change XX to prev state, link to WY if state is AK -->
+                    <a class="prev_next" href="/state/!!NextStateAbbr!!">!!NextStateAbbr!!</a> <!-- change XX to next state, link to AK if state is WY -->
                 </div>
                 <div class="spacer1"></div>
                 <div class="left">
-                    <img src="/images/noimage.jpg" alt="No Image" width="250" height="auto" /> <!-- change src and alt for state image -->
+                    <img src="!!StateImage!!" alt="!!StateImageAlt!!" width="250" height="auto" /> <!-- change src and alt for state image -->
                 </div>
                 <div class="right">
                     <div id="snapshot"></div>
@@ -79,6 +79,7 @@
                 </thead>
                 <tbody>
                     <!-- Data to be inserted here -->
+                    !!StateTableData!!
                 </tbody>
             </table>
             </div>
