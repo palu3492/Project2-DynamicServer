@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
-    <title>US Energy Consumption</title> <!-- change title to include year (e.g. 1999 US Energy Consumption) -->
+    <title>US !!!ENERGY_TITLE_HEAD!!! Consumption</title>  <!-- change title to include energy type (e.g. US Coal Consumption) -->
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.anychart.com/releases/8.7.0/js/anychart-core.min.js"></script>
     <script src="https://cdn.anychart.com/releases/8.7.0/js/anychart-cartesian.min.js"></script>
@@ -18,7 +18,7 @@
 <body onload="Init()">
     <div id="wrapper">
         <div id="content">
-            <a href="/"><h1>US Energy Consumption</h1></a>
+            <a href="/"><h1>US !!!ENERGY_TITLE_HEAD!!! Consumption</h1></a>
             
             <div class="spacer2"></div>
             
@@ -44,13 +44,14 @@
                     <h2>!!!ENERGYTYPE!!! Consumption Snapshot</h2> <!-- change header to include energy type (e.g. Coal Consumption Snaphot) -->
                 </div>
                 <div class="right">
-                    <a class="prev_next" href="">!!!PREV_ENERGY_TYPE!!!</a> <!-- change XX to prev enery type, link to Renewable if energy is Coal -->
-                    <a class="prev_next" href="">!!!NEXT_ENERGY_TYPE!!!</a> <!-- change XX to next enery type, link to Coal if energy is Renewable -->
+                    <a class="prev_next" href="/energy-type/!!!PREV_ENERGY_TYPE!!!">!!!PREV_ENERGY_TYPE_NEAT!!!</a> <!-- change XX to prev enery type, link to Renewable if energy is Coal -->
+                    <a class="prev_next" href="/energy-type/!!!NEXT_ENERGY_TYPE!!!">!!!NEXT_ENERGY_TYPE_NEAT!!!</a> <!-- change XX to next enery type, link to Coal if energy is Renewable -->
                 </div>
                 <div class="spacer1"></div>
                 <div class="left">
                     <img src="!!ENERGYImage!!" alt="!!ENERGYImageAlt!!" width="250" height="auto" /> <!-- change src and alt for energy type image -->
-                </div>
+					<figcaption>www.pexels.com</figcaption>
+				</div>
                 <div class="right">
                     <div id="snapshot"></div>
                 </div>
