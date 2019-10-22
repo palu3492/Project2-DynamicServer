@@ -213,13 +213,59 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
 		let energyType = req.params.selected_energy_type;
         response = replaceEnergyTemplateImages(response, energyType);
         response = replaceEnergyTemplatePagination(response, energyType);
-		
-		
-		WriteHtml(res, response);
+
+        let energyCounts = {};
+        let row, coalEachYear;
+        let promises = [];
+        for(let state of Object.keys(statePrevNext)) {
+            promises.push(
+                new Promise((resolve, reject) => {
+                    db.all("SELECT "+energyType+" FROM Consumption WHERE state_abbreviation = ? ORDER BY year ASC", state, (err, rows) => {
+                        coalEachYear = [];
+                        for(let i=0; i<rows.length; i++){
+                            row = rows[i];
+                            coalEachYear.push(Math.abs(row[energyType]));
+                        }
+                        energyCounts[state] = coalEachYear;
+                        resolve();
+                    });
+                })
+            );
+        }
+
+        Promise.all(promises).then((values) => {
+            response = response.replace('!!EnergyCounts!!', JSON.stringify(energyCounts));
+            response = replaceEnergyTemplateTable(response, energyCounts);
+            WriteHtml(res, response); // write when all promises are done
+        })
+
     }).catch((err) => {
         Write404Error(res);
     });
 });
+
+// Build energy table html and fill in template
+function replaceEnergyTemplateTable(response, energyCounts){
+    let tableBody = '';
+    let state, total, count;
+    for(let i = 0; i <= 2017-1960; i++){
+        total = 0;
+        tableBody += '<tr>';
+        tableBody += '<td>' + (i+1960) + '</td>';
+        for(state of Object.keys(energyCounts)){
+            count = energyCounts[state][i];
+            tableBody += '<td>' + count + '</td>';
+            total += count;
+        }
+        tableBody += '<td>' + total + '</td>';
+        tableBody += '</tr>';
+    }
+
+    response = response.replace('!!!EnergyTableData!!!', tableBody);
+
+    return response;
+}
+
 
 // Replace state images source and alt in template
 function replaceEnergyTemplateImages(response, energyType){
