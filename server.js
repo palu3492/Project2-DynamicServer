@@ -207,21 +207,28 @@ function replaceStateTemplateVariables(response, rows){
 
 // GET request handler for '/energy-type/*'
 app.get('/energy-type/:selected_energy_type', (req, res) => {
+	let energyType = req.params.selected_energy_type;
+	if(Object.keys(energyPrevNext).includes(energyType)) {
     ReadFile(path.join(template_dir, 'energy.html')).then((template) => {
         let response = template;
         // modify `response` here
-		let energyType = req.params.selected_energy_type;
+		
         response = replaceEnergyTemplateImages(response, energyType);
         response = replaceEnergyTemplatePagination(response, energyType);
 		
 		
 		WriteHtml(res, response);
     }).catch((err) => {
-        Write404Error(res);
-    });
+            Write404Error(res);
+        });
+    } else {
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.write('Error: no data for state '+stateAbbrName);
+        res.end();
+    }
 });
 
-// Replace state images source and alt in template
+// Replace energy images source and alt in template
 function replaceEnergyTemplateImages(response, energyType){
     let energyImagePath = '/images/states/'+energyType+'.png'; // file path for state image
 	response = response.replace('!!!energy_type!!!', energyType); // replace energy type
