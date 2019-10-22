@@ -211,23 +211,35 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
         let response = template;
         // modify `response` here
 		let energyType = req.params.selected_energy_type;
-        let energyImagePath = '/images/energy/'+energyType+'.png';
-        response = response.replace('!!!energy_type!!!', energyType); // replace energy type
-		response = response.replace('!!ENERGYImageAlt!!', energyType+' image');// replace energy image alt
-        response = response.replace('!!ENERGYImage!!', energyImagePath); // replace energy image src
-        
-        // Pagination
-        let prevState = 'ZZ';
-        let nextState = 'ZZ';
-        response = response.replace(/!!!PREV_ENERGY_TYPE!!!/g, prevState);
-        response = response.replace(/!!!NEXT_ENERGY_TYPE!!!/g, nextState);
-        response = response.replace(/!!!ENERGYTYPE!!!/g, energyType);
-
-        WriteHtml(res, response);
+        response = replaceStateTemplateImages(response, energyType);
+        response = replaceStateTemplatePagination(response, energyType);
+		
+		WriteHtml(res, response);
     }).catch((err) => {
         Write404Error(res);
     });
 });
+
+// Replace state images source and alt in template
+function replaceEnergyTemplateImages(response, energyType){
+    let energyImagePath = '/images/states/'+energyType+'.png'; // file path for state image
+	response = response.replace('!!!energy_type!!!', energyType); // replace energy type
+    response = response.replace(/!!!ENERGYTYPE!!!/g, energyType); // Replace all instances for energy
+    response = response.replace('!!ENERGYImage!!', energyImagePath); // Replace energy image src
+    response = response.replace('!!ENERGYImageAlt!!', energyType+' image'); // Replace energy image alt
+    return response;
+}
+
+function replaceEnergyTemplatePagination(response, energyType){
+    response = response.replace(/!!!PREV_ENERGY_TYPE!!!/g, energyPrevNext[energyType].prev);
+    response = response.replace(/!!!NEXT_ENERGY_TYPE!!!/g, energyPrevNext[energyType].next);
+    return response;
+}
+
+let energyPrevNext = {
+    coal:{prev:'renewable',next:'natural_gas'},natural_gas:{prev:'coal',next:'nuclear'},nuclear:{prev:'natural_gas',next:'petroleum'},petroleum:{prev:'nuclear',next:'renewable'},
+    renewable:{prev:'petroleum',next:'coal'}
+};
 
 function ReadFile(filename) {
     return new Promise((resolve, reject) => {
