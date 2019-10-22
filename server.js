@@ -212,10 +212,18 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
     ReadFile(path.join(template_dir, 'energy.html')).then((template) => {
         let response = template;
         // modify `response` here
-		
         response = replaceEnergyTemplateImages(response, energyType);
         response = replaceEnergyTemplatePagination(response, energyType);
 		
+			//need to get x conumption by state by year
+			//need to update the Table and Template Variable
+            //
+            //    db.all("NEED AN SQL QUERY HERE TO LOOP THROUGH ALL STATES FOR CONSUMPTION BY YEAR", energyType, (err, rows) => {
+                    //response = replaceEnergyTemplateTable(response, rows);//NEED TO COMPLETE THIS FUNCTION
+                    //response = replaceEnergyTemplateVariables(response, rows); NEED TO COMPLETE THIS FUNCTION
+           //         resolve();
+           //     });
+          //           
 		
 		WriteHtml(res, response);
     }).catch((err) => {
@@ -223,10 +231,41 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
         });
     } else {
         res.writeHead(404, {'Content-Type': 'text/plain'});
-        res.write('Error: no data for state '+stateAbbrName);
+        res.write('Error: no data for energy type: '+energyType);
         res.end();
     }
 });
+
+// Build state table html and fill in template
+function replaceEnergyTemplateTable(response, rows){//THIS FUNCTION NEEDS TO BE COMPLETED.
+    let tableBody = '';
+    let row, total, col;
+    for(let i = 0; i < rows.length; i++){
+        row = rows[i];
+        // Fill in table
+        total = 0;
+        tableBody += '<tr>';
+        for(col of Object.keys(row)){
+            if(col !== 'energyType') {
+                tableBody += '<td>' + row[col] + '</td>';
+                total += row[col];
+            }
+        }
+        tableBody += '<td>'+total+'</td>';
+        tableBody += '</tr>';
+    }
+
+    response = response.replace('!!!EnergyTableData!!!', tableBody);
+
+    return response;
+}
+
+// Fill state consumption array variables in template
+function replaceEnergyTemplateVariables(response, rows){//THIS FUNCTION NEEDS TO BE COMPLETED.
+    let energy_counts = [];
+    response = response.replace('!!!energy_counts!!!', energy_counts);
+    return response;
+}
 
 // Replace energy images source and alt in template
 function replaceEnergyTemplateImages(response, energyType){
