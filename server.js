@@ -220,8 +220,7 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
                     //response = replaceEnergyTemplateTable(response, rows);//NEED TO COMPLETE THIS FUNCTION
                     //response = replaceEnergyTemplateVariables(response, rows); NEED TO COMPLETE THIS FUNCTION
            //         resolve();
-           //     });
-           //           
+           //     });        
 		
 		WriteHtml(res, response);
     }).catch((err) => {
@@ -237,24 +236,7 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
 // Build energy table html and fill in template
 function replaceEnergyTemplateTable(response, rows){//THIS FUNCTION NEEDS TO BE COMPLETED.
     let tableBody = '';
-    let row, total, col;
-    for(let i = 0; i < rows.length; i++){
-        row = rows[i];
-        // Fill in table
-        total = 0;
-        tableBody += '<tr>';
-        for(col of Object.keys(row)){
-            if(col !== 'energyType') {
-                tableBody += '<td>' + row[col] + '</td>';
-                total += row[col];
-            }
-        }
-        tableBody += '<td>'+total+'</td>';
-        tableBody += '</tr>';
-    }
-
     response = response.replace('!!!EnergyTableData!!!', tableBody);
-
     return response;
 }
 
