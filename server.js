@@ -172,9 +172,7 @@ function replaceStateTemplateTable(response, rows){
         tableBody += '<td>'+total+'</td>';
         tableBody += '</tr>';
     }
-
     response = response.replace('!!StateTableData!!', tableBody);
-
     return response;
 }
 // Fill state consumption array variables in template
@@ -236,7 +234,7 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
     }
 });
 
-// Build state table html and fill in template
+// Build energy table html and fill in template
 function replaceEnergyTemplateTable(response, rows){//THIS FUNCTION NEEDS TO BE COMPLETED.
     let tableBody = '';
     let row, total, col;
@@ -260,7 +258,7 @@ function replaceEnergyTemplateTable(response, rows){//THIS FUNCTION NEEDS TO BE 
     return response;
 }
 
-// Fill state consumption array variables in template
+// Fill energy consumption array variables in template
 function replaceEnergyTemplateVariables(response, rows){//THIS FUNCTION NEEDS TO BE COMPLETED.
     let energy_counts = [];
     response = response.replace('!!!energy_counts!!!', energy_counts);
@@ -277,12 +275,14 @@ function replaceEnergyTemplateImages(response, energyType){
     return response;
 }
 
+// Replaces next and previous energy buttons links
 function replaceEnergyTemplatePagination(response, energyType){
     response = response.replace(/!!!PREV_ENERGY_TYPE!!!/g, energyPrevNext[energyType].prev);
     response = response.replace(/!!!NEXT_ENERGY_TYPE!!!/g, energyPrevNext[energyType].next);
     return response;
 }
 
+// Maps an energy to the previous and next energy for pagination
 let energyPrevNext = {
     coal:{prev:'renewable',next:'natural_gas'},natural_gas:{prev:'coal',next:'nuclear'},nuclear:{prev:'natural_gas',next:'petroleum'},petroleum:{prev:'nuclear',next:'renewable'},
     renewable:{prev:'petroleum',next:'coal'}
