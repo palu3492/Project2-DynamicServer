@@ -211,8 +211,9 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
         let response = template;
         // modify `response` here
 		let energyType = req.params.selected_energy_type;
-        response = replaceStateTemplateImages(response, energyType);
-        response = replaceStateTemplatePagination(response, energyType);
+        response = replaceEnergyTemplateImages(response, energyType);
+        response = replaceEnergyTemplatePagination(response, energyType);
+		
 		
 		WriteHtml(res, response);
     }).catch((err) => {
