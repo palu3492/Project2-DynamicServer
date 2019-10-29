@@ -191,7 +191,7 @@ function replaceStateTemplateVariables(response, rows){
         // Push values into arrays for graph
         coalCounts.push(row.coal);
         naturalGasCounts.push(row.natural_gas);
-        nuclearCounts.push(Math.abs(row.nuclear)); // How can there be negative consumption?
+        nuclearCounts.push(row.nuclear); // How can there be negative consumption?
         petroleumCounts.push(row.petroleum);
         renewableCounts.push(row.renewable);
     }
@@ -226,7 +226,7 @@ app.get('/energy-type/:selected_energy_type', (req, res) => {
                         coalEachYear = [];
                         for(let i=0; i<rows.length; i++){
                             row = rows[i];
-                            coalEachYear.push(Math.abs(row[energyType]));
+                            coalEachYear.push(row[energyType]);
                         }
                         energyCounts[state] = coalEachYear;
                         resolve();
