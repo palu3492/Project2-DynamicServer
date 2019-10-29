@@ -87,15 +87,92 @@ app.get('/', (req, res) => {
 
 // GET request handler for '/year/*'
 app.get('/year/:selected_year', (req, res) => {
-    ReadFile(path.join(template_dir, 'year.html')).then((template) => {
-        let response = template;
-        // modify `response` here
-        WriteHtml(res, response);
-    }).catch((err) => {
-        Write404Error(res);
-    });
+    let yearReq = req.params.selected_year;
+    let intyearReq = parseInt(yearReq);
+    if (intyearReq <= 2017 && intyearReq >= 1960)
+    {
+        ReadFile(path.join(template_dir, 'year.html')).then((template) => {
+            let response = template;
+            
+            
+            
+            response = response.replace(/!!!CHANGEYEAR!!!/g, yearReq);
+            db.all("SELECT * FROM Consumption WHERE year =?", [yearReq], (err,rows) =>{
+                let coalCount = 0;
+                let gasCount = 0;
+                let nuclearCount = 0;
+                let petroleumCount = 0;
+                let renewableCount = 0; 
+                let i; 
+                
+                for (i = 0; i < rows.length; i++){
+                    
+                    coalCount += rows[i]['coal'];  
+                    gasCount += rows[i]['natural_gas'];
+                    nuclearCount += rows[i]['nuclear']; 
+                    petroleumCount += rows[i]['petroleum'];
+                    renewableCount += rows[i]['renewable'];
+                }
+                
+                response = response.replace('!!Coalcount!!', coalCount);
+                response = response.replace('!!Gascount!!', gasCount);
+                response = response.replace('!!NuclearCount!!', nuclearCount);
+                response = response.replace('!!PetroleumCount!!', petroleumCount);
+                response = response.replace('!!RenewableCount!!', renewableCount);
+
+
+                let table = '';
+                for (i = 0; i < rows.length; i++){
+                    table += '<tr>'; 
+                    table += '<td>' + rows[i]['state_abbreviation'] + '</td>';
+                    table += '<td>' + rows[i]['coal'] + '</td>';
+                    table += '<td>' + rows[i]['natural_gas'] + '</td>';
+                    table += '<td>' + rows[i]['nuclear'] + '</td>';
+                    table += '<td>' + rows[i]['petroleum'] + '</td>';
+                    table += '<td>' + rows[i]['renewable'] + '</td>';
+                    table += '</tr>'
+                }
+
+                response = response.replace('<!-- Data to be inserted here -->', table);
+                response  = replaceYearButton(response, yearReq);
+                WriteHtml(res, response);
+
+                
+            });
+
+        }).catch((err) => {
+            Write404Error(res);
+        });
+    } else {
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.write('Error: no data for year: '+yearReq);
+        res.end();
+    }
 });
 
+function replaceYearButton(response, year){
+    
+    intyear = parseInt(year)
+    if(year == 1960)
+    {
+        response = response.replace(/!!PrevYear!!/g, intyear);
+        response = response.replace(/!!NextYear!!/g, intyear + 1);
+    }
+
+    else if (year == 2017)
+    {
+        response = response.replace(/!!NextYear!!/g, intyear);
+        response = response.replace(/!!PrevYear!!/g, intyear -1 );
+    }
+     
+    else
+    {
+        response = response.replace(/!!PrevYear!!/g, intyear -1 );
+        response = response.replace(/!!NextYear!!/g, intyear + 1);
+    }
+
+    return response;
+}
 // GET request handler for '/state/*'
 app.get('/state/:selected_state', (req, res) => {
     let stateAbbrName = req.params.selected_state; // Abbreviated state requested
