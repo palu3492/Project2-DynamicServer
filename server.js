@@ -282,7 +282,7 @@ function replaceStateTemplateVariables(response, rows){
         // Push values into arrays for graph
         coalCounts.push(row.coal);
         naturalGasCounts.push(row.natural_gas);
-        nuclearCounts.push(Math.abs(row.nuclear)); // How can there be negative consumption?
+        nuclearCounts.push(row.nuclear); // How can there be negative consumption?
         petroleumCounts.push(row.petroleum);
         renewableCounts.push(row.renewable);
     }
@@ -298,28 +298,103 @@ function replaceStateTemplateVariables(response, rows){
 
 // GET request handler for '/energy-type/*'
 app.get('/energy-type/:selected_energy_type', (req, res) => {
+	let energyType = req.params.selected_energy_type;
+	if(Object.keys(energyPrevNext).includes(energyType)){
     ReadFile(path.join(template_dir, 'energy.html')).then((template) => {
         let response = template;
         // modify `response` here
 		let energyType = req.params.selected_energy_type;
-        let energyImagePath = '/images/energy/'+energyType+'.png';
-        response = response.replace('!!!energy_type!!!', energyType); // replace energy type
-		response = response.replace('!!ENERGYImageAlt!!', energyType+' image');// replace energy image alt
-        response = response.replace('!!ENERGYImage!!', energyImagePath); // replace energy image src
-        
-        // Pagination
-        let prevState = 'ZZ';
-        let nextState = 'ZZ';
-        response = response.replace(/!!!PREV_ENERGY_TYPE!!!/g, prevState);
-        response = response.replace(/!!!NEXT_ENERGY_TYPE!!!/g, nextState);
-        response = response.replace(/!!!ENERGYTYPE!!!/g, energyType);
+        response = replaceEnergyTemplateImages(response, energyType);
+        response = replaceEnergyTemplatePagination(response, energyType);
 
-        WriteHtml(res, response);
+        let energyCounts = {};
+        let row, coalEachYear;
+        let promises = [];
+        for(let state of Object.keys(statePrevNext)) {
+            promises.push(
+                new Promise((resolve, reject) => {
+                    db.all("SELECT "+energyType+" FROM Consumption WHERE state_abbreviation = ? ORDER BY year ASC", state, (err, rows) => {
+                        coalEachYear = [];
+                        for(let i=0; i<rows.length; i++){
+                            row = rows[i];
+                            coalEachYear.push(row[energyType]);
+                        }
+                        energyCounts[state] = coalEachYear;
+                        resolve();
+                    });
+                })
+            );
+        }
+
+        Promise.all(promises).then((values) => {
+            response = response.replace('!!EnergyCounts!!', JSON.stringify(energyCounts));
+            response = replaceEnergyTemplateTable(response, energyCounts);
+            WriteHtml(res, response); // write when all promises are done
+        })
+
     }).catch((err) => {
-        Write404Error(res);
-    });
+            Write404Error(res);
+        });
+    } else {
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.write('Error: no data for energy type: '+energyType);
+        res.end();
+    }
 });
 
+// Build energy table html and fill in template
+function replaceEnergyTemplateTable(response, energyCounts){
+    let tableBody = '';
+    let state, total, count;
+    for(let i = 0; i <= 2017-1960; i++){
+        total = 0;
+        tableBody += '<tr>';
+        tableBody += '<td>' + (i+1960) + '</td>';
+        for(state of Object.keys(energyCounts)){
+            count = energyCounts[state][i];
+            tableBody += '<td>' + count + '</td>';
+            total += count;
+        }
+        tableBody += '<td>' + total + '</td>';
+        tableBody += '</tr>';
+    }
+
+    response = response.replace('!!!EnergyTableData!!!', tableBody);
+
+    return response;
+}
+
+
+// Replace state images source and alt in template
+function replaceEnergyTemplateImages(response, energyType){
+    let energyImagePath = '/images/energy/'+energyType+'.png'; // file path for state image
+	response = response.replace('!!!energy_type!!!', energyType); // replace energy type
+	response = response.replace(/!!!ENERGY_TITLE_HEAD!!!/g,energyNeatName[energyType].name);//changes title
+    response = response.replace(/!!!ENERGYTYPE!!!/g, energyNeatName[energyType].name); // Replace all instances for energy
+    response = response.replace('!!ENERGYImage!!', energyImagePath); // Replace energy image src
+response = response.replace('!!ENERGYImageAlt!!', energyNeatName[energyType].name+' image'); // Replace energy image alt
+    return response;
+}
+
+// Replaces next and previous energy buttons links
+function replaceEnergyTemplatePagination(response, energyType){
+	response = response.replace(/!!!PREV_ENERGY_TYPE_NEAT!!!/g, energyNeatName[energyPrevNext[energyType].prev].name);
+    response = response.replace(/!!!NEXT_ENERGY_TYPE_NEAT!!!/g, energyNeatName[energyPrevNext[energyType].next].name);
+    response = response.replace(/!!!PREV_ENERGY_TYPE!!!/g, energyPrevNext[energyType].prev);
+    response = response.replace(/!!!NEXT_ENERGY_TYPE!!!/g, energyPrevNext[energyType].next);
+    return response;
+}
+
+// Maps an energy to the previous and next energy for pagination
+let energyPrevNext = {
+    coal:{prev:'renewable',next:'natural_gas'},natural_gas:{prev:'coal',next:'nuclear'},nuclear:{prev:'natural_gas',next:'petroleum'},petroleum:{prev:'nuclear',next:'renewable'},
+    renewable:{prev:'petroleum',next:'coal'}
+};
+
+let energyNeatName = {
+	coal:{name:'Coal'},natural_gas:{name:'Natural Gas'},nuclear:{name:'Nuclear'},petroleum:{name:'Petroleum'},
+    renewable:{name:'Renewable'}
+};
 function ReadFile(filename) {
     return new Promise((resolve, reject) => {
         fs.readFile(filename, (err, data) => {
