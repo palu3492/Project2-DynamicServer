@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
-    <title>US Energy Consumption</title> <!-- change title to include year (e.g. 1999 US Energy Consumption) -->
+    <title>!!!CHANGEYEAR!!! US Energy Consumption</title> <!-- change title to include year (e.g. 1999 US Energy Consumption) -->
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.anychart.com/releases/8.7.0/js/anychart-core.min.js"></script>
     <script src="https://cdn.anychart.com/releases/8.7.0/js/anychart-pie.min.js"></script>
@@ -11,12 +11,12 @@
     <script type="application/javascript" src="/scripts/yearvis.js"></script>
     <script type="application/javascript">
         // `year` and total counts for entire US --> set these variables equal to appropriate value
-        var year;
-        var coal_count;
-        var natural_gas_count;
-        var nuclear_count;
-        var petroleum_count;
-        var renewable_count;
+        var year = !!!CHANGEYEAR!!!;
+        var coal_count = !!Coalcount!!;
+        var natural_gas_count = !!Gascount!!;
+        var nuclear_count = !!NuclearCount!!;
+        var petroleum_count = !!PetroleumCount!!;
+        var renewable_count = !!RenewableCount!!;
     </script>
 </head>
 <body onload="Init()">
@@ -45,11 +45,11 @@
 
             <div>
                 <div class="left">
-                    <h2>National Snapshot</h2> <!-- change header to include year (e.g. 1999 National Snaphot) -->
+                    <h2>!!!CHANGEYEAR!!! National Snapshot</h2> <!-- change header to include year (e.g. 1999 National Snaphot) -->
                 </div>
                 <div class="right">
-                    <a class="prev_next" href="">Prev</a> <!-- link to itself if year is 1960 -->
-                    <a class="prev_next" href="">Next</a> <!-- link to itself if year is 2017 -->
+                    <a class="prev_next" href="/year/!!PrevYear!!">Prev</a> <!-- link to itself if year is 1960 -->
+                    <a class="prev_next" href="/year/!!NextYear!!">Next</a> <!-- link to itself if year is 2017 -->
                 </div>
                 <div class="spacer1"></div>
                 <div id="snapshot"></div>
