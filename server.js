@@ -1,10 +1,10 @@
 // Built-in Node.js modules
-var fs = require('fs')
-var path = require('path')
+var fs = require('fs');
+var path = require('path');
 
 // NPM modules
-var express = require('express')
-var sqlite3 = require('sqlite3')
+var express = require('express');
+var sqlite3 = require('sqlite3');
 
 
 var public_dir = path.join(__dirname, 'public');
@@ -18,21 +18,12 @@ var port = 8000;
 var db = new sqlite3.Database(db_filename, sqlite3.OPEN_READONLY, (err) => {
     if (err) {
         console.log('Error opening ' + db_filename);
-    }
-    else {
+    } else {
         console.log('Now connected to ' + db_filename);
-        TestSQL();
     }
 });
 
-function TestSQL(){
-    db.all("SELECT * FROM Consumption WHERE year =?", ["2017"], (err,rows) =>{
-        //console.log(rows);
-    });
-}
-
 app.use(express.static(public_dir));
-
 
 // GET request handler for '/'
 app.get('/', (req, res) => {
@@ -78,8 +69,6 @@ app.get('/', (req, res) => {
             
             WriteHtml(res, response);
         });
-
-        
     }).catch((err) => {
         Write404Error(res);
     });
@@ -88,14 +77,12 @@ app.get('/', (req, res) => {
 // GET request handler for '/year/*'
 app.get('/year/:selected_year', (req, res) => {
     let yearReq = req.params.selected_year;
-    let intyearReq = parseInt(yearReq);
-    if (intyearReq <= 2017 && intyearReq >= 1960)
+    let intYearReq = parseInt(yearReq);
+    if (intYearReq <= 2017 && intYearReq >= 1960)
     {
         ReadFile(path.join(template_dir, 'year.html')).then((template) => {
             let response = template;
-            
-            
-            
+
             response = response.replace(/!!!CHANGEYEAR!!!/g, yearReq);
             db.all("SELECT * FROM Consumption WHERE year =?", [yearReq], (err,rows) =>{
                 let coalCount = 0;
@@ -106,7 +93,6 @@ app.get('/year/:selected_year', (req, res) => {
                 let i; 
                 
                 for (i = 0; i < rows.length; i++){
-                    
                     coalCount += rows[i]['coal'];  
                     gasCount += rows[i]['natural_gas'];
                     nuclearCount += rows[i]['nuclear']; 
@@ -120,8 +106,8 @@ app.get('/year/:selected_year', (req, res) => {
                 response = response.replace('!!PetroleumCount!!', petroleumCount);
                 response = response.replace('!!RenewableCount!!', renewableCount);
 
-
                 let table = '';
+                let total;
                 for (i = 0; i < rows.length; i++){
                     table += '<tr>'; 
                     table += '<td>' + rows[i]['state_abbreviation'] + '</td>';
@@ -130,14 +116,14 @@ app.get('/year/:selected_year', (req, res) => {
                     table += '<td>' + rows[i]['nuclear'] + '</td>';
                     table += '<td>' + rows[i]['petroleum'] + '</td>';
                     table += '<td>' + rows[i]['renewable'] + '</td>';
+                    total = rows[i]['coal'] + rows[i]['natural_gas'] + rows[i]['nuclear'] + rows[i]['petroleum'] + rows[i]['renewable'];
+                    table += '<td>' + total + '</td>';
                     table += '</tr>'
                 }
 
                 response = response.replace('<!-- Data to be inserted here -->', table);
-                response  = replaceYearButton(response, yearReq);
+                response  = replaceYearButton(response, intYearReq);
                 WriteHtml(res, response);
-
-                
             });
 
         }).catch((err) => {
@@ -151,24 +137,22 @@ app.get('/year/:selected_year', (req, res) => {
 });
 
 function replaceYearButton(response, year){
-    
-    intyear = parseInt(year)
-    if(year == 1960)
+    if(year === 1960)
     {
-        response = response.replace(/!!PrevYear!!/g, intyear);
-        response = response.replace(/!!NextYear!!/g, intyear + 1);
+        response = response.replace(/!!PrevYear!!/g, year);
+        response = response.replace(/!!NextYear!!/g, year + 1);
     }
 
-    else if (year == 2017)
+    else if (year === 2017)
     {
-        response = response.replace(/!!NextYear!!/g, intyear);
-        response = response.replace(/!!PrevYear!!/g, intyear -1 );
+        response = response.replace(/!!NextYear!!/g, year);
+        response = response.replace(/!!PrevYear!!/g, year -1 );
     }
      
     else
     {
-        response = response.replace(/!!PrevYear!!/g, intyear -1 );
-        response = response.replace(/!!NextYear!!/g, intyear + 1);
+        response = response.replace(/!!PrevYear!!/g, year -1 );
+        response = response.replace(/!!NextYear!!/g, year + 1);
     }
 
     return response;
@@ -222,8 +206,6 @@ function replaceStateTemplateImages(response, stateAbbrName){
     return response;
 }
 
-// Maps a state to the previous and next state for pagination
-// Didn't want to calculate these every time
 let statePrevNext = {
     AK:{prev:'WY',next:'AL'},AL:{prev:'AK',next:'AR'},AR:{prev:'AL',next:'AZ'},AZ:{prev:'AR',next:'CA'},
     CA:{prev:'AZ',next:'CO'},CO:{prev:'CA',next:'CT'},CT:{prev:'CO',next:'DC'},DC:{prev:'CT',next:'DE'},
@@ -300,39 +282,42 @@ function replaceStateTemplateVariables(response, rows){
 app.get('/energy-type/:selected_energy_type', (req, res) => {
 	let energyType = req.params.selected_energy_type;
 	if(Object.keys(energyPrevNext).includes(energyType)){
-    ReadFile(path.join(template_dir, 'energy.html')).then((template) => {
-        let response = template;
-        // modify `response` here
-		let energyType = req.params.selected_energy_type;
-        response = replaceEnergyTemplateImages(response, energyType);
-        response = replaceEnergyTemplatePagination(response, energyType);
+        ReadFile(path.join(template_dir, 'energy.html')).then((template) => {
+            let response = template;
+            // modify `response` here
+            let energyType = req.params.selected_energy_type;
+            //response = response.replace('!!!energy_type!!!', energyType); // replace energy type
+            // response = response.replace(/!!!ENERGY_TITLE_HEAD!!!/g,energyNeatName[energyType].name);//changes title
+            response = response.replace(/!!!ENERGYTYPE!!!/g, energyNeatName[energyType].name); // Replace all instances for energy
+            response = replaceEnergyTemplateImages(response, energyType);
+            response = replaceEnergyTemplatePagination(response, energyType);
 
-        let energyCounts = {};
-        let row, coalEachYear;
-        let promises = [];
-        for(let state of Object.keys(statePrevNext)) {
-            promises.push(
-                new Promise((resolve, reject) => {
-                    db.all("SELECT "+energyType+" FROM Consumption WHERE state_abbreviation = ? ORDER BY year ASC", state, (err, rows) => {
-                        coalEachYear = [];
-                        for(let i=0; i<rows.length; i++){
-                            row = rows[i];
-                            coalEachYear.push(row[energyType]);
-                        }
-                        energyCounts[state] = coalEachYear;
-                        resolve();
-                    });
-                })
-            );
-        }
+            let energyCounts = {};
+            let row, coalEachYear;
+            let promises = [];
+            for(let state of Object.keys(statePrevNext)) {
+                promises.push(
+                    new Promise((resolve, reject) => {
+                        db.all("SELECT "+energyType+" FROM Consumption WHERE state_abbreviation = ? ORDER BY year ASC", state, (err, rows) => {
+                            coalEachYear = [];
+                            for(let i=0; i<rows.length; i++){
+                                row = rows[i];
+                                coalEachYear.push(row[energyType]);
+                            }
+                            energyCounts[state] = coalEachYear;
+                            resolve();
+                        });
+                    })
+                );
+            }
 
-        Promise.all(promises).then((values) => {
-            response = response.replace('!!EnergyCounts!!', JSON.stringify(energyCounts));
-            response = replaceEnergyTemplateTable(response, energyCounts);
-            WriteHtml(res, response); // write when all promises are done
-        })
+            Promise.all(promises).then(() => {
+                response = response.replace('!!EnergyCounts!!', JSON.stringify(energyCounts));
+                response = replaceEnergyTemplateTable(response, energyCounts);
+                WriteHtml(res, response); // write when all promises are done
+            });
 
-    }).catch((err) => {
+        }).catch((err) => {
             Write404Error(res);
         });
     } else {
@@ -365,14 +350,11 @@ function replaceEnergyTemplateTable(response, energyCounts){
 }
 
 
-// Replace state images source and alt in template
+// Replace energy images source and alt in template
 function replaceEnergyTemplateImages(response, energyType){
     let energyImagePath = '/images/energy/'+energyType+'.png'; // file path for state image
-	response = response.replace('!!!energy_type!!!', energyType); // replace energy type
-	response = response.replace(/!!!ENERGY_TITLE_HEAD!!!/g,energyNeatName[energyType].name);//changes title
-    response = response.replace(/!!!ENERGYTYPE!!!/g, energyNeatName[energyType].name); // Replace all instances for energy
     response = response.replace('!!ENERGYImage!!', energyImagePath); // Replace energy image src
-response = response.replace('!!ENERGYImageAlt!!', energyNeatName[energyType].name+' image'); // Replace energy image alt
+    response = response.replace('!!ENERGYImageAlt!!', energyNeatName[energyType].name+' image'); // Replace energy image alt
     return response;
 }
 
@@ -395,6 +377,7 @@ let energyNeatName = {
 	coal:{name:'Coal'},natural_gas:{name:'Natural Gas'},nuclear:{name:'Nuclear'},petroleum:{name:'Petroleum'},
     renewable:{name:'Renewable'}
 };
+
 function ReadFile(filename) {
     return new Promise((resolve, reject) => {
         fs.readFile(filename, (err, data) => {
